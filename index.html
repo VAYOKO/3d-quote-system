@@ -225,7 +225,7 @@ abs: { name: "ABS/ASA งานวิศวกรรม ทนร้อน ", pr
             const infillText = document.getElementById('infill').options[document.getElementById('infill').selectedIndex].text;
             const price = document.getElementById('val-price').innerText;
             const matName = MY_CONFIG.materials[document.getElementById('material').value].name;
-            const details = `ยืนยันออเดอร์ใหม่!\n---\nไฟล์: ${currentFileName}\nขนาด: ${modelDim} mm\nวัสดุ: ${matName}\nInfill: ${infillText}\nราคาประเมิน: ฿${price}\nเมลติดต่อลูกค้า: ${userEmail}\n---\n*อย่าลืมแนบไฟล์ STL และสลิปโอนเงินมาในเมลนี้ด้วยนะครับ*`;
+            const details = `ยืนยันออเดอร์ใหม่!\n---\nไฟล์: ${currentFileName}\nขนาด: ${modelDim} mm\nวัสดุ: ${matName}\nInfill: ${infillText}\nราคาประเมิน: ฿${price}\nเมลติดต่อลูกค้า: ${userEmail}\n---\n⚠️*อย่าลืมแนบไฟล์ STL และสลิปโอนเงินมาในเมลนี้ด้วยนะครับ*⚠️`;
             window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${MY_CONFIG.shopEmail}&su=สั่งปริ้น3D-${currentFileName}&body=${encodeURIComponent(details)}`, '_blank');
         }
 
