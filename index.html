@@ -2,156 +2,136 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>3D Print Service - Payment & Order</title>
+    <title>3D Print Quote System - Final Version</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
     
     <style>
-        :root { --bg-main: #ffffff; --bg-sidebar: #f2f4f7; --text-main: #333333; --border-color: #e0e0e0; --primary: #d44638; }
-        [data-theme="dark"] { --bg-main: #121212; --bg-sidebar: #1e1e1e; --text-main: #e0e0e0; --border-color: #333333; }
+        :root { --bg-main: #ffffff; --bg-sidebar: #f2f4f7; --text-main: #333333; --primary: #d44638; --accent: #0046ad; }
+        body { font-family: 'Kanit', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-main); overflow: hidden; }
         
-        body { font-family: 'Kanit', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-main); color: var(--text-main); overflow: hidden; }
-        
-        .sidebar { width: 350px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-right: 1px solid var(--border-color); position: relative; }
+        /* Sidebar Design */
+        .sidebar { width: 360px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-right: 1px solid #e0e0e0; position: relative; }
         .sidebar-content { padding: 20px; flex-grow: 1; overflow-y: auto; padding-bottom: 200px; }
         
-        .logo-container { text-align: center; margin-bottom: 15px; }
-        .logo-container img { max-width: 240px; border-radius: 12px; }
-
-        .print-limit-tag { background: #ff4757; color: white; padding: 8px; border-radius: 8px; font-size: 0.8rem; text-align: center; font-weight: bold; margin-bottom: 15px; }
+        .option-group { margin-bottom: 18px; }
+        label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--primary); }
+        select, input { width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #ddd; font-family: inherit; box-sizing: border-box; }
         
         .upload-btn { display: block; background: #333; color: white; text-align: center; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
 
-        .option-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--primary); }
-        select, input[type="email"] { width: 100%; padding: 10px; border: 1.5px solid var(--border-color); border-radius: 8px; background: var(--bg-main); color: var(--text-main); font-family: inherit; box-sizing: border-box; }
+        /* Payment & Contact */
+        .payment-box { background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #ddd; border-left: 5px solid var(--accent); margin-top: 15px; font-size: 0.85rem; }
+        .qr-btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-top: 8px; font-weight: bold; width: 100%; }
 
-        .breakdown-card { background: var(--bg-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; font-size: 0.85rem; margin-top: 10px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-
-        /* Payment Section */
-        .payment-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 10px; border: 1px solid #ddd; border-left: 5px solid #0046ad; }
-        [data-theme="dark"] .payment-box { background: #252525; }
-        .qr-btn { background: #0046ad; color: white; border: none; padding: 5px 10px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; margin-top: 5px; }
-
-        .contact-section { margin-top: 20px; font-size: 0.8rem; border-top: 1px solid var(--border-color); padding-top: 15px; }
-
-        .sidebar-footer { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-sidebar); padding: 15px 20px; border-top: 1px solid var(--border-color); }
+        /* Footer & Summary */
+        .sidebar-footer { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-sidebar); padding: 15px 20px; border-top: 1px solid #ddd; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); }
         .summary-box { background: #000; color: white; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 8px; }
         .price-value { font-size: 1.8rem; font-weight: 700; }
         .order-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
 
+        /* Render Area */
         #render-area { flex-grow: 1; position: relative; background: #eee; }
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; background: rgba(0,0,0,0.8); color: white; padding: 15px 25px; border-radius: 30px; z-index: 1000; }
         
-        /* Modal สำหรับ QR Code */
-        #qr-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:20px; border-radius:15px; text-align:center; }
+        /* Modal QR Code */
+        #qr-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; flex-direction: column; }
+        .modal-content { background:white; padding:20px; border-radius:15px; text-align:center; position: relative; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="qr-modal" onclick="this.style.display='none'">
-        <div class="modal-content">
-            <h3>QR Code พร้อมเพย์</h3>
-            <img src="105446.jpg" alt="QR Code" style="width:250px; height:auto;" onerror="this.src='https://via.placeholder.com/250?text=PromptPay+QR'">
-            <p style="color:#666; font-size:0.8rem;">คลิกเพื่อปิดหน้าต่าง</p>
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-modal" onclick="document.getElementById('qr-modal').style.display='none'">&times;</span>
+            <h3 style="margin-top:0;">QR Code พร้อมเพย์</h3>
+            <img src="105446.jpg" alt="QR Code" style="width:280px; height:auto; border: 1px solid #eee;" onerror="this.src='https://via.placeholder.com/280?text=Scan+QR+Payment'">
+            <p style="color:#666; font-size:0.8rem; margin-top:10px;">สแกนโอนเงินผ่านแอปธนาคารของคุณ</p>
         </div>
     </div>
 
     <div class="sidebar">
         <div class="sidebar-content">
+            <h2 style="text-align:center; color:var(--primary);">3D PRINT SERVICE</h2>
             
-            <div class="logo-container">
-                <img src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/150?text=3D+PRINT'">
-            </div>
-
-            <div class="print-limit-tag">🚀 ขนาดพิมพ์สูงสุด: 256x256x256 mm</div>
-
-            <label class="upload-btn"> 📂 เลือกไฟล์ STL <input type="file" id="file-input" accept=".stl" style="display:none"> </label>
+            <label class="upload-btn">📂 เลือกไฟล์ STL <input type="file" id="file-input" accept=".stl" style="display:none"></label>
 
             <div class="option-group">
-                <label>1. วัสดุและสี</label>
-                <select id="material" onchange="updateMaterialUI()"></select>
-                <div class="color-palette" id="color-palette" style="display:flex; gap:8px; margin-top:8px;"></div>
+                <label>1. วัสดุ (Material)</label>
+                <select id="material" onchange="updateMaterialUI()">
+                    <option value="pla_pro">PLA Pro (ผิวสวย/ตั้งโชว์)</option>
+                    <option value="petg_hf">PETG HF (เหนียว/ของใช้)</option>
+                    <option value="abs">ABS/ASA (ทนร้อน/วิศวกรรม)</option>
+                </select>
+                <div id="color-palette" style="display:flex; gap:8px; margin-top:10px;"></div>
             </div>
 
             <div class="option-group">
-                <label>2. อีเมลของคุณ (เพื่อแจ้งความคืบหน้า)</label>
-                <input type="email" id="user-email" placeholder="example@gmail.com">
+                <label>2. ความหนาแน่นเนื้อใน (Infill)</label>
+                <select id="infill" onchange="updatePrice()">
+                    <option value="0.15">15% (ประหยัด)</option>
+                    <option value="0.30">30% (มาตรฐาน)</option>
+                    <option value="0.50">50% (แข็งแรง)</option>
+                    <option value="0.75">75% (แข็งแรงมาก)</option>
+                    <option value="0.80">80% (งานวิศวกรรม)</option>
+                    <option value="1.00">100% (เนื้อตัน)</option>
+                </select>
             </div>
 
-            <div class="breakdown-card">
-                <div class="info-row"><strong>ไฟล์:</strong> <span id="bd-filename">-</span></div>
-                <div class="info-row"><strong>ขนาด:</strong> <span id="bd-dimension">-</span></div>
-                <div class="info-row"><span>น้ำหนักประเมิน:</span><span id="bd-weight">0.0 g</span></div>
-                <div class="info-row"><span>ค่าบริการ Setup:</span><span>50.00 ฿</span></div>
+            <div class="option-group">
+                <label>3. อีเมลของคุณ (สำหรับติดต่อกลับ)</label>
+                <input type="email" id="user-email" placeholder="=ชื่อของคุณ@gmail.com">
             </div>
 
             <div class="payment-box">
-                <strong style="color:#0046ad;">💰 ข้อมูลการชำระเงิน</strong><br>
-                <span style="font-size:0.85rem;">
-                    ธนาคาร: <strong>ธนาคารไทยพาณิชย์ (SCB)</strong><br>
-                    เลขบัญชี: <strong>2212444042</strong><br>
-                    ชื่อ: <strong>นาย วาริส วิภาวนิช</strong>
-                </span><br>
-                <button class="qr-btn" onclick="document.getElementById('qr-modal').style.display='flex'">ดู QR พร้อมเพย์</button>
+                <strong>💰 ช่องทางชำระเงิน</strong><br>
+                ธนาคาร: <strong>กสิกรไทย (KBANK)</strong><br>
+                เลขบัญชี: <strong>0XX-X-XXXXX-X</strong><br>
+                ชื่อ: <strong>นาย/นางสาว XXXXX XXXXX</strong><br>
+                <button class="qr-btn" onclick="document.getElementById('qr-modal').style.display='flex'">📸 ดู QR Code พร้อมเพย์</button>
             </div>
-
-            <div class="contact-section">
-                <strong>📍 ช่องทางติดต่ออื่นๆ:</strong><br>
-                📞 โทร: 089-777-3889<br>
-                🆔 LINE: varis22521
+            
+            <div style="font-size: 0.75rem; color: #666; margin-top: 15px; line-height: 1.4;">
+                📞 ติดต่อสอบถาม: 0XX-XXX-XXXX<br>
+                🆔 LINE: @YourID
             </div>
         </div>
 
         <div class="sidebar-footer">
             <div class="summary-box">
-                <div style="font-size: 0.7rem; opacity: 0.8;">ราคาสุทธิประเมิน (ไม่รวมค่าจัดส่ง)</div>
+                <div style="font-size:0.7rem; opacity:0.8;">ราคาสุทธิประเมิน (ไม่รวมค่าส่ง)</div>
                 <div class="price-value">฿ <span id="val-price">0.00</span></div>
             </div>
             <button class="order-btn" onclick="processOrder()">📧 ส่งหลักฐานทาง Gmail</button>
         </div>
     </div>
 
-    <div id="render-area">
-        <div id="loading">กำลังโหลดโมเดล...</div>
-    </div>
+    <div id="render-area"></div>
 
     <script>
-        // ==========================================
-        // ⚙️ ตั้งค่าอีเมลและข้อมูลของคุณตรงนี้
-        // ==========================================
         const MY_CONFIG = {
-            shopEmail: "varis22521@gmail.com", // <-- เปลี่ยนเป็น Gmail ของคุณ
+            shopEmail: "varis22521@gmail.com", // <-- ใส่ Gmail ของคุณที่นี่
             setupFee: 50,
-            materials: [
-                { id: "pla", name: "PLA (Matte)", price: 1.5, density: 1.25,
-                    colors: [ { name: "ดำ", hex: "#111111" }, { name: "ขาว", hex: "#ffffff" } ]
-                }
-            ]
+            materials: {
+                pla_pro: { name: "PLA Pro", price: 1.6, density: 1.25, colors: ["#111111", "#ffffff", "#ff4d4d", "#4caf50"] },
+                petg_hf: { name: "PETG HF", price: 1.5, density: 1.27, colors: ["#3498db", "#ff9800", "#ffffff"] },
+                abs: { name: "ABS/ASA", price: 2.0, density: 1.07, colors: ["#444444", "#888888"] }
+            }
         };
 
-        let scene, camera, renderer, controls, mesh, modelVol = 0, currentFileName = "", modelSize = "", selectedColorName = "", selectedColor = "";
+        let scene, camera, renderer, controls, mesh, modelVol = 0, currentFileName = "", selectedColor = "", selectedColorName = "";
 
         function init() {
-            const matSelect = document.getElementById('material');
-            MY_CONFIG.materials.forEach(m => { matSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`; });
-            
             scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
-            camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 350) / window.innerHeight, 0.1, 10000);
+            camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 360) / window.innerHeight, 0.1, 10000);
             camera.position.set(200, 200, 200);
             renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth - 350, window.innerHeight);
+            renderer.setSize(window.innerWidth - 360, window.innerHeight);
             document.getElementById('render-area').appendChild(renderer.domElement);
-            
-            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-            let light = new THREE.DirectionalLight(0xffffff, 0.5); light.position.set(100, 100, 100); scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
             controls = new THREE.OrbitControls(camera, renderer.domElement);
-            scene.add(new THREE.GridHelper(500, 50, 0x888888, 0xcccccc));
-
             updateMaterialUI();
             animate();
         }
@@ -159,23 +139,15 @@
         document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0]; if (!file) return;
             currentFileName = file.name;
-            document.getElementById('bd-filename').innerText = file.name;
-            document.getElementById('loading').style.display = 'block';
-            
             const reader = new FileReader();
             reader.onload = function(event) {
                 const geometry = new THREE.STLLoader().parse(event.target.result);
                 if (mesh) scene.remove(mesh);
                 mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: selectedColor }));
                 geometry.computeBoundingBox(); geometry.center();
-                const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
-                modelSize = `${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)} mm`;
-                document.getElementById('bd-dimension').innerText = modelSize;
-                camera.position.set(Math.max(size.x,size.y,size.z)*2.5, Math.max(size.x,size.y,size.z)*2.5, Math.max(size.x,size.y,size.z)*2.5);
                 scene.add(mesh);
                 modelVol = calculateVolume(geometry) / 1000;
                 updatePrice();
-                document.getElementById('loading').style.display = 'none';
             };
             reader.readAsArrayBuffer(file);
         });
@@ -189,56 +161,43 @@
             return Math.abs(vol);
         }
 
-        function updatePrice() {
-            const mat = MY_CONFIG.materials.find(m => m.id === document.getElementById('material').value);
-            const weight = modelVol * mat.density;
-            let total = (weight * mat.price) + MY_CONFIG.setupFee;
-            document.getElementById('bd-weight').innerText = weight.toFixed(1) + " g";
-            document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-        }
-
         function updateMaterialUI() {
-            const mat = MY_CONFIG.materials.find(m => m.id === document.getElementById('material').value);
+            const matKey = document.getElementById('material').value;
+            const mat = MY_CONFIG.materials[matKey];
             const palette = document.getElementById('color-palette');
             palette.innerHTML = "";
-            mat.colors.forEach((c, idx) => {
+            mat.colors.forEach((hex, i) => {
                 let dot = document.createElement('div');
                 dot.style.width = '30px'; dot.style.height = '30px'; dot.style.borderRadius = '50%';
-                dot.style.backgroundColor = c.hex; dot.style.cursor = 'pointer';
-                dot.style.border = (selectedColor === c.hex) ? '3px solid #d44638' : '1px solid #ddd';
-                dot.onclick = () => { selectedColor = c.hex; selectedColorName = c.name; if(mesh) mesh.material.color.set(c.hex); updateMaterialUI(); };
+                dot.style.backgroundColor = hex; dot.style.cursor = 'pointer';
+                dot.style.border = (selectedColor === hex) ? '3px solid #d44638' : '1px solid #ccc';
+                dot.onclick = () => { selectedColor = hex; if(mesh) mesh.material.color.set(hex); updateMaterialUI(); };
                 palette.appendChild(dot);
-                if(idx === 0 && !selectedColor) { selectedColor = c.hex; selectedColorName = c.name; }
+                if(i === 0 && !selectedColor) selectedColor = hex;
             });
             updatePrice();
         }
 
+        function updatePrice() {
+            const matKey = document.getElementById('material').value;
+            const mat = MY_CONFIG.materials[matKey];
+            const infill = parseFloat(document.getElementById('infill').value);
+            const weight = modelVol * mat.density * (infill * 0.9 + 0.1);
+            let total = (weight * mat.price) + MY_CONFIG.setupFee;
+            document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+
         function processOrder() {
             const userEmail = document.getElementById('user-email').value;
-            if(currentFileName === "" || userEmail === "") { alert("กรุณาโหลดไฟล์และกรอกอีเมลของคุณก่อนครับ"); return; }
+            const infillText = document.getElementById('infill').options[document.getElementById('infill').selectedIndex].text;
+            if(currentFileName === "" || userEmail === "") { alert("กรุณาอัปโหลดไฟล์และใส่อีเมลของคุณก่อนครับ"); return; }
             
             const price = document.getElementById('val-price').innerText;
-            const matName = MY_CONFIG.materials.find(m => m.id === document.getElementById('material').value).name;
-            const orderID = Math.floor(Math.random() * 9000) + 1000;
-
-            const details = `🛒 ออเดอร์ #${orderID}
-📄 ไฟล์: ${currentFileName}
-📏 ขนาด: ${modelSize}
-🛠 วัสดุ: ${matName} (${selectedColorName})
-💰 ยอดโอน: ฿${price} (ยังไม่รวมค่าส่ง)
-📧 เมลติดต่อกลับ: ${userEmail}
-------------------
-⚠️ ขั้นตอนสำคัญ:
-1. แนบสลิปการโอนเงิน (สแกนจาก QR หน้าเว็บ)
-2. แนบไฟล์ ${currentFileName} (.stl) มาในเมลนี้ด้วยครับ
-------------------
-ทางร้านจะรีบดำเนินการตรวจสอบและแจ้งกลับครับ!`;
+            const matName = MY_CONFIG.materials[document.getElementById('material').value].name;
+            const subject = `สั่งปริ้น3D: ${currentFileName}`;
+            const details = `ยืนยันออเดอร์ใหม่!\n------------------\n📄 ไฟล์: ${currentFileName}\n🛠 วัสดุ: ${matName}\n🎯 Infill: ${infillText}\n💰 ราคาประเมิน: ฿${price}\n📧 อีเมลติดต่อกลับ: ${userEmail}\n------------------\n⚠️ กรุณาแนบไฟล์ .stl และรูปสลิปการโอนเงินมาในเมลนี้ด้วยนะครับ`;
             
-            const subject = encodeURIComponent(`สั่งปริ้น 3D #${orderID} - ${currentFileName}`);
-            const body = encodeURIComponent(details);
-            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${MY_CONFIG.shopEmail}&su=${subject}&body=${body}`;
-            
-            window.open(gmailUrl, '_blank');
+            window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${MY_CONFIG.shopEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(details)}`, '_blank');
         }
 
         function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
