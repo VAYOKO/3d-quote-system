@@ -213,16 +213,26 @@
             updatePrice();
         }
 
-        function updatePrice() {
-            const matKey = document.getElementById('material').value;
-            const mat = MY_CONFIG.materials[matKey];
-            const infill = parseFloat(document.getElementById('infill').value);
-            const weight = modelVol * mat.density * (infill * 0.9 + 0.1);
-            let total = (weight * mat.price) + MY_CONFIG.setupFee;
-            document.getElementById('bd-weight').innerText = weight.toFixed(1) + " g";
-            document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-        }
+       function updatePrice() {
+    const matKey = document.getElementById('material').value;
+    const mat = MY_CONFIG.materials[matKey];
+    const infill = parseFloat(document.getElementById('infill').value);
+    
+    // สูตรเดิม: weight = modelVol * mat.density * (infill * 0.9 + 0.1);
+    
+    // สูตรใหม่ (ปรับให้ใกล้เคียง Slicer มากขึ้น):
+    // เราจะใช้ปริมาตรโมเดล คูณความหนาแน่น แล้วคูณตัวแปรเผื่อ (Safety Factor)
+    // ตัวเลข 2.8 คือการเผื่อผนัง (Walls) และส่วนที่ตันของโมเดลครับ
+    const weight = modelVol * mat.density * (infill * 0.5 + 0.5) * 1.2; 
+    
+    // หรือถ้าอยากให้ใกล้ 43g ตามที่เครื่องบอก ให้ใช้ตัวคูณเพิ่มครับ
+    // const weight = (modelVol * mat.density * infill) + (ค่าคงที่เผื่อผนัง);
 
+    let total = (weight * mat.price) + MY_CONFIG.setupFee;
+    
+    document.getElementById('bd-weight').innerText = weight.toFixed(1) + " g";
+    document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+}
         function processOrder() {
             const userEmail = document.getElementById('user-email').value;
             if(currentFileName === "" || userEmail === "") { alert("กรุณาอัปโหลดไฟล์และใส่อีเมลของคุณก่อนครับ"); return; }
