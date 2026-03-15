@@ -184,6 +184,7 @@
         }
 
        // --- ส่วนการโหลดไฟล์ที่ปรับปรุงใหม่ (บรรทัดประมาณ 160-185) ---
+// ในฟังก์ชัน init (ตรงส่วนโหลดไฟล์):
 document.getElementById('file-input').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
     currentFileName = file.name;
@@ -191,36 +192,35 @@ document.getElementById('file-input').addEventListener('change', function(e) {
     const reader = new FileReader();
     reader.onload = function(event) {
         const geometry = new THREE.STLLoader().parse(event.target.result);
-        
-        // ลบโมเดลเก่า (ถ้ามี)
         if (mesh) scene.remove(mesh);
         
-        // 1. สร้างตัวโมเดลหลัก
-        mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: selectedColor }));
+        // 1. สร้าง Group เพื่อรวมตัวงานและเส้นขอบ
+        mesh = new THREE.Group(); 
         
-        // 2. สร้างเส้นขอบ (Edges) 
+        // 2. ตัวงานหลัก (ทึบ)
+        const mainMesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: selectedColor }));
+        
+        // 3. เส้นขอบ (Edges)
         const edges = new THREE.EdgesGeometry(geometry);
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 1 }); // สีเส้นขอบ
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 1 });
         const wireframe = new THREE.LineSegments(edges, lineMaterial);
         
-        // รวมโมเดลและเส้นขอบเข้าด้วยกัน
-        mesh.add(wireframe); 
+        // 4. ใส่ทั้งสองอย่างเข้าไปใน Group
+        mesh.add(mainMesh);
+        mesh.add(wireframe);
         
         geometry.computeBoundingBox(); 
-        geometry.center();
+        geometry.center(); // ศูนย์กลางอยู่ตรงกลางเสมอ
         
-        const size = new THREE.Vector3(); 
-        geometry.boundingBox.getSize(size);
-        modelDim = `${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)}`;
-        document.getElementById('bd-size').innerText = modelDim;
+        // 5. ปรับให้วางราบพื้นโลกโดยตรง (วิธีแก้ข้อ 2 ในหน้าเว็บ)
+        // geometry.rotateX(-Math.PI / 2); // หมุน 90 องศาให้นอนลง
         
         scene.add(mesh);
         modelVol = calculateVolume(geometry) / 1000;
         updatePrice();
     };
     reader.readAsArrayBuffer(file);
-});;
-
+});
         function calculateVolume(geometry) {
             let vol = 0; const pos = geometry.attributes.position;
             for (let i = 0; i < pos.count; i += 3) {
