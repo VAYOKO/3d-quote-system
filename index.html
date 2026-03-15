@@ -291,27 +291,51 @@
             document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
         }
 
-        function processOrder() {
-            const userEmail = document.getElementById('user-email').value;
-            if(currentFileName === "" || userEmail === "") { alert("กรุณาอัปโหลดไฟล์และใส่อีเมลของคุณก่อนนะครับ"); return; }
-            
-            const price = document.getElementById('val-price').innerText;
-            const matName = MY_CONFIG.materials[document.getElementById('material').value].name;
-            const infillText = document.getElementById('infill').options[document.getElementById('infill').selectedIndex].text;
-            
-            const details = `ยืนยันคำสั่งพิมพ์ 3D\n----------------------\nไฟล์: ${currentFileName}\nขนาด: ${modelDim}\nวัสดุ: ${matName}\nความหนาแน่น: ${infillText}\n\nราคาประเมินสุทธิ: ฿${price}\nอีเมลติดต่อกลับ: ${userEmail}\n----------------------\n*กรุณาแนบไฟล์ STL และสลิปการโอนเงินมาในเมลนี้*`;
-            
-            window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${MY_CONFIG.shopEmail}&su=สั่งปริ้น3D-${currentFileName}&body=${encodeURIComponent(details)}`, '_blank');
-        }
+   function processOrder() {
+    const userEmail = document.getElementById('user-email').value;
+    if(currentFileName === "" || userEmail === "") { 
+        alert("กรุณาอัปโหลดไฟล์และใส่อีเมลของคุณก่อนครับ"); 
+        return; 
+    }
+    
+    const price = document.getElementById('val-price').innerText;
+    const matKey = document.getElementById('material').value;
+    const matName = MY_CONFIG.materials[matKey].name;
+    const infillText = document.getElementById('infill').options[document.getElementById('infill').selectedIndex].text;
+    
+    // แปลงรหัสสีให้เป็นชื่อเรียก (ถ้าเป็นสีที่กำหนดไว้) หรือส่งเป็นรหัส HEX
+    let colorName = selectedColor;
+    if (selectedColor === "#111111") colorName = "ดำ (Black)";
+    else if (selectedColor === "#ff9800") colorName = "ส้ม (Orange)";
+    else if (selectedColor === "#3498db") colorName = "น้ำเงิน (Blue)";
+    else if (selectedColor === "#00cc00") colorName = "เขียว (Green)";
+    else if (selectedColor === "#b266ff") colorName = "ม่วง (Purple)";
+    else if (selectedColor === "#ff0000") colorName = "แดง (Red)";
 
-        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
-        init();
-        
-        window.addEventListener('resize', () => {
-            camera.aspect = (window.innerWidth - 360) / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth - 360, window.innerHeight);
-        });
+    // สร้างเนื้อหาอีเมล (Body)
+    const emailBody = `ยืนยันคำสั่งพิมพ์ 3D (New Order Request)
+------------------------------------------
+รายละเอียดออเดอร์:
+- ไฟล์: ${currentFileName}
+- ขนาดชิ้นงาน: ${modelDim}
+- วัสดุ: ${matName}
+- สีที่เลือก: ${colorName}
+- ความหนาแน่น (Infill): ${infillText}
+------------------------------------------
+ข้อมูลราคา:
+- ราคาประเมินสุทธิ: ฿${price} (รวมค่า Setup 50฿)
+------------------------------------------
+ข้อมูลติดต่อลูกค้า:
+- อีเมล: ${userEmail}
+
+*หมายเหตุ: กรุณาแนบไฟล์ STL และสลิปการโอนเงินมาพร้อมกับอีเมลฉบับนี้ เพื่อเริ่มดำเนินการผลิต*
+------------------------------------------`;
+
+    // เปิดหน้า Gmail
+    const mailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${MY_CONFIG.shopEmail}&su=สั่งปริ้น3D - ${currentFileName}&body=${encodeURIComponent(emailBody)}`;
+    
+    window.open(mailUrl, '_blank');
+}
     </script>
 </body>
 </html>
