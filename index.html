@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Print Quote System - Ultimate</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --bg-main: #ffffff; --bg-sidebar: #f2f4f7; --text-main: #333333; --border-color: #e0e0e0; --primary: #007bff; --line-green: #06C755; }
+        [data-theme="dark"] { --bg-main: #121212; --bg-sidebar: #1e1e1e; --text-main: #e0e0e0; --border-color: #333333; }
+        
+        body { font-family: 'Kanit', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-main); color: var(--text-main); transition: 0.3s; overflow: hidden; }
+        
+        /* Sidebar Layout */
+        .sidebar { width: 350px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 100; position: relative; }
+        .sidebar-content { padding: 20px; flex-grow: 1; overflow-y: auto; scroll-behavior: smooth; padding-bottom: 140px; }
+        
+        .logo-container { text-align: center; margin-bottom: 15px; }
+        .logo-container img { max-width: 140px; border-radius: 12px; }
+
+        .print-limit-tag { background: #ff4757; color: white; padding: 8px; border-radius: 8px; font-size: 0.8rem; text-align: center; font-weight: bold; margin-bottom: 15px; }
+
+        .order-tag { background: #333; color: #fff; padding: 6px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; margin-bottom: 15px; text-align: center; }
+
+        .option-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--primary); }
+        select { width: 100%; padding: 10px; border: 1.5px solid var(--border-color); border-radius: 8px; background: var(--bg-main); color: var(--text-main); font-family: inherit; }
+
+        .color-palette { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+        .color-dot { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .color-dot.active { border-color: var(--primary); transform: scale(1.15); box-shadow: 0 0 10px rgba(0,123,255,0.3); }
+
+        .breakdown-card { background: var(--bg-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 10px; font-size: 0.85rem; margin-top: 10px; }
+        .breakdown-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .breakdown-row.file-info { flex-direction: column; gap: 4px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 10px; }
+
+        /* Sticky Footer */
+        .sidebar-footer { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-sidebar); padding: 15px 20px; border-top: 1px solid var(--border-color); box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+
+        .summary-box { background: #000; color: white; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 8px; }
+        .price-value { font-size: 1.8rem; font-weight: 700; }
+        
+        .upload-btn { display: block; background: var(--primary); color: white; text-align: center; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+
+        .order-btn { width: 100%; padding: 15px; background: var(--line-green); color: white; border: none; border-radius: 10px; font-size: 1.2rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3); }
+
+        /* Scroll Hint Arrow */
+        .scroll-arrow { position: absolute; bottom: 150px; right: 20px; width: 30px; height: 30px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: bounce 2s infinite; pointer-events: none; opacity: 0; transition: 0.3s; z-index: 5; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+
+        #render-area { flex-grow: 1; position: relative; background: #eee; }
+        [data-theme="dark"] #render-area { background: #000; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; background: rgba(0,0,0,0.8); color: #fff; padding: 15px 25px; border-radius: 30px; z-index: 10; }
+        
+        .theme-btn { position: absolute; top: 15px; right: 15px; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: var(--bg-sidebar); color: var(--text-main); border: 1px solid var(--border-color); }
+    </style>
+</head>
+<body data-theme="light">
+
+    <div class="sidebar">
+        <div id="scroll-hint" class="scroll-arrow">↓</div>
+
+        <div class="sidebar-content" id="sidebar-scrollable">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/150?text=LOGO'">
+            </div>
+
+            <div class="print-limit-tag">🚀 ขนาดพิมพ์สูงสุด: 256x256x256 mm</div>
+
+            <div class="order-tag">ออเดอร์ลำดับที่ #<span id="order-id-display">1001</span></div>
+            
+            <label class="upload-btn"> 📂 เลือกไฟล์ STL <input type="file" id="file-input" accept=".stl" style="display:none"> </label>
+
+            <div class="option-group">
+                <label>1. เลือกวัสดุ</label>
+                <select id="material" onchange="updateMaterialUI()"></select>
+            </div>
+
+            <div class="option-group">
+                <label>2. เลือกสี</label>
+                <div class="color-palette" id="color-palette"></div>
+            </div>
+
+            <div class="breakdown-card">
+                <div class="breakdown-row file-info">
+                    <strong>📄 ข้อมูลไฟล์:</strong>
+                    <span id="bd-filename" style="color:var(--primary); word-break: break-all;">ยังไม่ได้เลือกไฟล์</span>
+                    <span id="bd-dimension" style="font-size: 0.8rem; opacity: 0.8;">ขนาด: -</span>
+                </div>
+                <div class="breakdown-row"><span>น้ำหนักประเมิน:</span><span id="bd-weight">0.0 g</span></div>
+                <div class="breakdown-row"><span>ราคาวัสดุ:</span><span id="bd-mat-cost">0.00 ฿</span></div>
+                <div class="breakdown-row"><span>ค่าบริการ Setup:</span><span>50.00 ฿</span></div>
+            </div>
+            <div style="height: 30px;"></div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="summary-box">
+                <div style="font-size: 0.7rem; opacity: 0.8;">ราคาสุทธิประเมิน</div>
+                <div class="price-value">฿ <span id="val-price">0.00</span></div>
+            </div>
+            <button class="order-btn" onclick="processOrder()">SEND TO LINE</button>
+        </div>
+    </div>
+
+    <div id="render-area">
+        <div id="loading">ประมวลผลโมเดล...</div>
+        <button class="theme-btn" onclick="toggleTheme()">🌓 เปลี่ยนโหมดสี</button>
+    </div>
+
+    <script>
+        // ==========================================
+        // ⚙️ ตั้งค่าข้อมูลของคุณตรงนี้
+        // ==========================================
+        const MY_CONFIG = {
+            setupFee: 50,
+            lineContact: "varis22521", // เช่น myid_3d
+            emailContact: "varis22521@gmail.com", // ใส่อีเมลสำหรับส่งสำรอง
+            startOrderID: 1001,
+            materials: [
+                { id: "pla", name: "PLA (Bambu Matte)", price: 1.5, density: 1.25,
+                    colors: [ { name: "ดำ", hex: "#111111" }, { name: "ส้ม", hex: "#ff6600" }, { name: "เขียว", hex: "#2ecc71" } ]
+                },
+                { id: "petg", name: "PETG (Bambu Basic)", price: 1.4, density: 1.27,
+                    colors: [ { name: "ขาว", hex: "#ffffff" }, { name: "ฟ้า", hex: "#3498db" } ]
+                }
+            ]
+        };
+
+        let scene, camera, renderer, controls, mesh, grid, selectedColor, selectedColorName, currentFileName = "", orderID, modelSize = "";
+        let modelVol = 0;
+
+        // จัดการ Scroll Arrow
+        const sidebar = document.getElementById('sidebar-scrollable');
+        const arrow = document.getElementById('scroll-hint');
+        sidebar.addEventListener('scroll', () => {
+            const isBottom = sidebar.scrollHeight - sidebar.scrollTop <= sidebar.clientHeight + 40;
+            arrow.style.opacity = isBottom ? "0" : "1";
+        });
+
+        function setupOrderID() {
+            let savedID = localStorage.getItem('last_order_id');
+            orderID = savedID ? parseInt(savedID) + 1 : MY_CONFIG.startOrderID;
+            document.getElementById('order-id-display').innerText = orderID;
+        }
+
+        function init() {
+            setupOrderID();
+            const matSelect = document.getElementById('material');
+            MY_CONFIG.materials.forEach(m => { matSelect.innerHTML += `<option value="${m.id}">${m.name}</option>`; });
+
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
+            camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 350) / window.innerHeight, 0.1, 10000);
+            camera.position.set(200, 200, 200);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth - 350, window.innerHeight);
+            document.getElementById('render-area').appendChild(renderer.domElement);
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+            let light = new THREE.DirectionalLight(0xffffff, 0.5); light.position.set(100, 100, 100); scene.add(light);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            grid = new THREE.GridHelper(500, 50, 0x000000, 0x444444); // ปรับ Grid ให้เข้มขึ้น
+            grid.material.transparent = true; grid.material.opacity = 0.4; scene.add(grid);
+
+            updateMaterialUI();
+            animate();
+            setTimeout(() => { if(sidebar.scrollHeight > sidebar.clientHeight) arrow.style.opacity = "1"; }, 1000);
+        }
+
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            currentFileName = file.name;
+            document.getElementById('bd-filename').innerText = file.name;
+            document.getElementById('loading').style.display = 'block';
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const geometry = new THREE.STLLoader().parse(event.target.result);
+                if (mesh) scene.remove(mesh);
+                mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: selectedColor }));
+                geometry.computeBoundingBox(); geometry.center();
+                const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
+                
+                modelSize = `${size.x.toFixed(1)} x ${size.y.toFixed(1)} x ${size.z.toFixed(1)} mm`;
+                document.getElementById('bd-dimension').innerText = `ขนาด: ${modelSize}`;
+                
+                camera.position.set(Math.max(size.x,size.y,size.z)*2.5, Math.max(size.x,size.y,size.z)*2.5, Math.max(size.x,size.y,size.z)*2.5);
+                scene.add(mesh);
+                modelVol = calculateVolume(geometry) / 1000;
+                updatePrice(); 
+                document.getElementById('loading').style.display = 'none';
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function calculateVolume(geometry) {
+            let vol = 0; const pos = geometry.attributes.position;
+            for (let i = 0; i < pos.count; i += 3) {
+                const v1 = new THREE.Vector3().fromBufferAttribute(pos, i), v2 = new THREE.Vector3().fromBufferAttribute(pos, i+1), v3 = new THREE.Vector3().fromBufferAttribute(pos, i+2);
+                vol += v1.dot(v2.cross(v3)) / 6.0;
+            }
+            return Math.abs(vol);
+        }
+
+        function updatePrice() {
+            const mat = MY_CONFIG.materials.find(m => m.id === document.getElementById('material').value);
+            const weight = modelVol * mat.density;
+            let matCost = weight * mat.price;
+            let total = matCost + MY_CONFIG.setupFee;
+            document.getElementById('bd-weight').innerText = weight.toFixed(1) + " g";
+            document.getElementById('bd-mat-cost').innerText = matCost.toFixed(2) + " ฿";
+            document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+
+        function updateMaterialUI() {
+            const matId = document.getElementById('material').value;
+            const mat = MY_CONFIG.materials.find(m => m.id === matId);
+            const palette = document.getElementById('color-palette');
+            palette.innerHTML = "";
+            mat.colors.forEach((c, idx) => {
+                let dot = document.createElement('div');
+                dot.className = `color-dot ${idx === 0 ? 'active' : ''}`;
+                dot.style.backgroundColor = c.hex;
+                dot.onclick = () => {
+                    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+                    selectedColor = c.hex; selectedColorName = c.name; if(mesh) mesh.material.color.set(selectedColor);
+                };
+                palette.appendChild(dot);
+                if(idx === 0) { selectedColor = c.hex; selectedColorName = c.name; }
+            });
+            updatePrice();
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.getAttribute('data-theme') === 'light';
+            body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+            scene.background = new THREE.Color(isLight ? 0x121212 : 0xffffff);
+            grid.material.color.set(isLight ? 0xffffff : 0x000000);
+        }
+
+        function processOrder() {
+            if(currentFileName === "") { 
+                alert("กรุณาอัปโหลดไฟล์ STL ก่อนครับ"); 
+                return; 
+            }
+            
+            const price = document.getElementById('val-price').innerText;
+            const matName = MY_CONFIG.materials.find(m => m.id === document.getElementById('material').value).name;
+            const text = `🛒 ออเดอร์ #${orderID}\n📄 ไฟล์: ${currentFileName}\n📏 ขนาด: ${modelSize}\n🛠 วัสดุ: ${matName}\n🎨 สี: ${selectedColorName}\n💰 ราคาประเมิน: ฿${price}\n------------------\n(รบกวนส่งไฟล์ .stl เข้าแชทนี้อีกครั้ง)`;
+            
+            localStorage.setItem('last_order_id', orderID);
+            
+            // 1. ส่ง LINE (เปิดหน้าต่างที่ 1)
+            const lineUrl = `https://line.me/ti/p/~${MY_CONFIG.lineContact}?text=${encodeURIComponent(text)}`;
+            window.open(lineUrl, '_blank');
+            
+            // 2. ส่ง GMAIL (เปิดหน้าต่างที่ 2 ทันที)
+            // ใช้ mailto: แบบมาตรฐานเพื่อให้รองรับทั้ง App ในมือถือ และ Gmail ในคอม
+            const subject = encodeURIComponent(`สั่งปริ้น 3D ออเดอร์ #${orderID} - ${currentFileName}`);
+            const body = encodeURIComponent(text);
+            const mailtoUrl = `mailto:${MY_CONFIG.emailContact}?subject=${subject}&body=${body}`;
+            
+            // ใช้หน่วงเวลานิดเดียวเพื่อให้ LINE เด้งก่อน
+            setTimeout(() => {
+                window.location.href = mailtoUrl; 
+                setupOrderID(); // รันเลขใหม่
+            }, 500);
+        }
+
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        init();
+    </script>
+</body>
+</html>
