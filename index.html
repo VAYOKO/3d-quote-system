@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>3D Print Quote System - Ultimate Version</title>
+    <title>3D Print Quote System - Final Fixed</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -12,23 +12,25 @@
         :root { --bg-main: #ffffff; --bg-sidebar: #f8f9fa; --text-main: #333333; --primary: #d44638; --accent: #0046ad; --card-bg: #ffffff; --border: #e0e0e0; }
         [data-theme="dark"] { --bg-main: #121212; --bg-sidebar: #1e1e1e; --text-main: #e0e0e0; --primary: #ff5252; --accent: #448aff; --card-bg: #2d2d2d; --border: #444444; }
         
-        body { font-family: 'Kanit', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-main); color: var(--text-main); overflow: hidden; transition: 0.3s; }
+        body { font-family: 'Kanit', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg-main); color: var(--text-main); overflow: hidden; }
         
         /* Sidebar */
         .sidebar { width: 360px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-right: 1px solid var(--border); position: relative; z-index: 10; }
         .sidebar-content { padding: 20px; flex-grow: 1; overflow-y: auto; padding-bottom: 200px; }
         
-        /* Controls */
+        /* Logo Styling */
+        .logo-container { text-align: center; margin-bottom: 20px; }
+        .logo-container img { max-width: 150px; height: auto; border-radius: 10px; }
+
         .option-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--primary); }
         select, input { width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--card-bg); color: var(--text-main); font-family: inherit; box-sizing: border-box; }
         
         .upload-btn { display: block; background: #333; color: white; text-align: center; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
 
-        /* Detail Card (Breakdown) */
+        /* Detail Card */
         .detail-card { background: var(--card-bg); border: 1px solid var(--border); padding: 15px; border-radius: 10px; font-size: 0.85rem; margin-top: 10px; }
         .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed var(--border); padding-bottom: 4px; }
-        .detail-row:last-child { border-bottom: none; }
 
         /* Payment */
         .payment-box { background: var(--card-bg); padding: 15px; border-radius: 10px; border: 1px solid var(--border); border-left: 5px solid var(--accent); margin-top: 15px; }
@@ -40,12 +42,10 @@
         .price-value { font-size: 1.8rem; font-weight: 700; }
         .order-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
 
-        /* Theme Toggle */
         .theme-btn { position: absolute; top: 15px; right: 15px; z-index: 100; padding: 8px; border-radius: 50%; cursor: pointer; border: none; background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         #render-area { flex-grow: 1; position: relative; background: var(--bg-main); }
         
-        /* Modal */
         #qr-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; }
         .modal-content { background:white; padding:20px; border-radius:15px; text-align:center; color: #333; }
     </style>
@@ -64,16 +64,18 @@
 
     <div class="sidebar">
         <div class="sidebar-content">
-            <h2 style="text-align:center; margin-bottom:20px;">3D QUOTE</h2>
+            <div class="logo-container">
+                <img src="logo.png" alt="Shop Logo" onerror="this.src='https://via.placeholder.com/150x50?text=MY+3D+SHOP'">
+            </div>
             
             <label class="upload-btn">📂 เลือกไฟล์ STL <input type="file" id="file-input" accept=".stl" style="display:none"></label>
 
             <div class="option-group">
                 <label>1. วัสดุ (Material)</label>
                 <select id="material" onchange="updateMaterialUI()">
-                    <option value="pla_pro">PLA Pro (ของเล่น/สวยงาม)</option>
-                    <option value="petg_hf">PETG HF (เหนียว/ของใช้)</option>
-                    <option value="abs">ABS/ASA (วิศวกรรม/ทนร้อน)</option>
+                    <option value="pla_pro">PLA Pro (3.5฿/g)</option>
+                    <option value="petg_hf">PETG HF (3.0฿/g)</option>
+                    <option value="abs">ABS/ASA (4.0฿/g)</option>
                 </select>
                 <div id="color-palette" style="display:flex; gap:8px; margin-top:10px;"></div>
             </div>
@@ -95,7 +97,7 @@
             </div>
 
             <div class="detail-card">
-                <div class="detail-row"><span>ชื่อไฟล์:</span><span id="bd-name" style="max-width:150px; overflow:hidden; text-overflow:ellipsis;">-</span></div>
+                <div class="detail-row"><span>ชื่อไฟล์:</span><span id="bd-name">-</span></div>
                 <div class="detail-row"><span>ขนาด (mm):</span><span id="bd-size">-</span></div>
                 <div class="detail-row"><span>น้ำหนักประเมิน:</span><span id="bd-weight">0.0 g</span></div>
                 <div class="detail-row"><span>ค่าบริการ Setup:</span><span>50.00 ฿</span></div>
@@ -125,9 +127,10 @@
             shopEmail: "YOUREMAIL@gmail.com", 
             setupFee: 50,
             materials: {
-                pla_pro: { name: "PLA Pro", price: 1.6, density: 1.25, colors: ["#111111", "#ffffff", "#ff4d4d"] },
-                petg_hf: { name: "PETG HF", price: 1.5, density: 1.27, colors: ["#3498db", "#ff9800"] },
-                abs: { name: "ABS/ASA", price: 2.0, density: 1.07, colors: ["#444444", "#888888"] }
+                // ปรับราคาเป็น 3.5 ตามที่คุณต้องการเพื่อให้ยอด 14.6g ได้ 101 บาท
+                pla_pro: { name: "PLA Pro", price: 3.5, density: 1.25, colors: ["#111111", "#ffffff", "#ff4d4d"] },
+                petg_hf: { name: "PETG HF", price: 3.0, density: 1.27, colors: ["#3498db", "#ff9800"] },
+                abs: { name: "ABS/ASA", price: 4.0, density: 1.07, colors: ["#444444", "#888888"] }
             }
         };
 
@@ -136,23 +139,15 @@
         function init() {
             scene = new THREE.Scene(); 
             scene.background = new THREE.Color(0xffffff);
-            
             camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 360) / window.innerHeight, 0.1, 10000);
             camera.position.set(250, 250, 250);
-            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth - 360, window.innerHeight);
             document.getElementById('render-area').appendChild(renderer.domElement);
-            
             scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-            let dLight = new THREE.DirectionalLight(0xffffff, 0.5); dLight.position.set(1, 1, 1); scene.add(dLight);
-            
             controls = new THREE.OrbitControls(camera, renderer.domElement);
-            
-            // Grid Helper
             grid = new THREE.GridHelper(500, 50, 0x888888, 0xdddddd);
             scene.add(grid);
-
             updateMaterialUI();
             animate();
         }
@@ -175,11 +170,9 @@
                 if (mesh) scene.remove(mesh);
                 mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: selectedColor }));
                 geometry.computeBoundingBox(); geometry.center();
-                
                 const size = new THREE.Vector3(); geometry.boundingBox.getSize(size);
                 modelDim = `${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)}`;
                 document.getElementById('bd-size').innerText = modelDim;
-                
                 scene.add(mesh);
                 modelVol = calculateVolume(geometry) / 1000;
                 updatePrice();
@@ -213,35 +206,24 @@
             updatePrice();
         }
 
-       function updatePrice() {
-    const matKey = document.getElementById('material').value;
-    const mat = MY_CONFIG.materials[matKey];
-    const infill = parseFloat(document.getElementById('infill').value);
-    
-    // สูตรเดิม: weight = modelVol * mat.density * (infill * 0.9 + 0.1);
-    
-    // สูตรใหม่ (ปรับให้ใกล้เคียง Slicer มากขึ้น):
-    // เราจะใช้ปริมาตรโมเดล คูณความหนาแน่น แล้วคูณตัวแปรเผื่อ (Safety Factor)
-    // ตัวเลข 2.8 คือการเผื่อผนัง (Walls) และส่วนที่ตันของโมเดลครับ
-    const weight = modelVol * mat.density * (infill * 0.5 + 0.5) * 1.2; 
-    
-    // หรือถ้าอยากให้ใกล้ 43g ตามที่เครื่องบอก ให้ใช้ตัวคูณเพิ่มครับ
-    // const weight = (modelVol * mat.density * infill) + (ค่าคงที่เผื่อผนัง);
+        function updatePrice() {
+            const matKey = document.getElementById('material').value;
+            const mat = MY_CONFIG.materials[matKey];
+            const infill = parseFloat(document.getElementById('infill').value);
+            // ปรับสูตรน้ำหนักเล็กน้อยเพื่อให้แสดงผลเหมาะสม
+            const weight = modelVol * mat.density * (infill * 0.9 + 0.1);
+            let total = (weight * mat.price) + MY_CONFIG.setupFee;
+            document.getElementById('bd-weight').innerText = weight.toFixed(1) + " g";
+            document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
 
-    let total = (weight * mat.price) + MY_CONFIG.setupFee;
-    
-    document.getElementById('bd-weight').innerText = weight.toFixed(1) + " g";
-    document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
-}
         function processOrder() {
             const userEmail = document.getElementById('user-email').value;
             if(currentFileName === "" || userEmail === "") { alert("กรุณาอัปโหลดไฟล์และใส่อีเมลของคุณก่อนครับ"); return; }
             const infillText = document.getElementById('infill').options[document.getElementById('infill').selectedIndex].text;
             const price = document.getElementById('val-price').innerText;
             const matName = MY_CONFIG.materials[document.getElementById('material').value].name;
-            
             const details = `ออเดอร์ใหม่!\n---\nไฟล์: ${currentFileName}\nขนาด: ${modelDim} mm\nวัสดุ: ${matName}\nInfill: ${infillText}\nราคา: ฿${price}\nเมลลูกค้า: ${userEmail}\n---\n*แนบไฟล์ STL และสลิปโอนเงินในเมลนี้ด้วยนะครับ*`;
-            
             window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${MY_CONFIG.shopEmail}&su=สั่งปริ้น3D-${currentFileName}&body=${encodeURIComponent(details)}`, '_blank');
         }
 
