@@ -62,7 +62,15 @@
         .tray-info { display: flex; flex-direction: column; gap: 2px; max-width: 75%; }
         .file-name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .file-meta { opacity: 0.7; font-size: 0.75rem; }
-        .remove-btn { background: #ff5252; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+        
+        /* แก้ไขปุ่มลบให้แสดงผลกากบาทสีขาวชัดเจน */
+        .remove-btn { 
+            background: #ff5252; color: white; border: none; 
+            width: 24px; height: 24px; border-radius: 4px; cursor: pointer; 
+            font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; line-height: 1;
+        }
+        .remove-btn:hover { background: #ff3333; }
 
         .sidebar-footer { 
             position: absolute; bottom: 0; left: 0; right: 0; 
@@ -156,6 +164,7 @@
                 <label>1. เลือกวัสดุ (Material)</label>
                 <select id="material" onchange="updateMaterialUI()">
                     <option value="pla_pro">PLA Pro [สวยเนียน • ตั้งโชว์]</option>
+                    <option value="pla_silk">PLA Silk [ผิวเงาโลหะ • สีทอง]</option>
                     <option value="petg_hf">PETG HF [เหนียวทน • สีส้ม]</option>
                     <option value="petg">PETG มาตรฐาน [เหนียวทน • หลายสี]</option>
                 </select>
@@ -208,24 +217,25 @@
     </div>
 
     <script>
+        // แก้ไขคีย์จาก "pla sik" ที่ผิดไวยากรณ์เป็น "pla_silk" และแก้สีซ้ำ
         const CONFIG = {
             shopEmail: "varis22521@gmail.com",
-            setupFee: 50, // คิดราคาตั้งค่าเหมาจ่ายต่อถาด
+            setupFee: 50, 
             materials: {
-                  pla_pro: { name: "PLA Pro", price: 3.7, density: 1.25, colors: ["#111111"], colorNames: {"#111111":"สีดำ (Black)"} },
+                pla_pro: { name: "PLA Pro", price: 3.7, density: 1.25, colors: ["#111111"], colorNames: {"#111111":"สีดำ (Black)"} },
+                pla_silk: { name: "PLA Silk", price: 3.8, density: 1.25, colors: ["#FFFF00"], colorNames: {"#FFFF00":"สีทอง"} },
                 petg_hf: { name: "PETG HF (ส้ม)", price: 3.6, density: 1.25, colors: ["#ff9800","#4314FF"], colorNames: {"#ff9800":"สีส้ม","#4314FF":"สีน้ำเงิน"} },
-            
-                pla sik:{ name: "PLA SIK", price: 3.8, density: 1.25, colors:["#FFFF00"],colorNames: {"#FFFF00":"สีทอง"}},
-                
-                petg: { name: "PETG มาตรฐาน", price: 3.4, density: 1.25, colors: ["#3498db","#00cc00","#ff0000","#FFFF00","#A8A8A8","#FFFFFF","#FF99FF","#003300","#FFFFFF"], 
-
-                        colorNames: {"#3498db":"สีน้ำเงิน", "#00cc00":"สีเขียว", "#ff0000":"สีแดง", "#FFFF00":"สีเหลือง", "#A8A8A8":"สีเทา","#FFFFFF":"สีใสโปร่งเเสง","#FF99FF":"สีชมพู","#003300":"สีเขียวเข้ม","#FFFFFF":"สีขาว"} }
+                petg: { 
+                    name: "PETG มาตรฐาน", 
+                    price: 3.4, 
+                    density: 1.25, 
+                    colors: ["#3498db","#00cc00","#ff0000","#FFFF00","#A8A8A8","#FFFFFF","#FF99FF","#003300"], 
+                    colorNames: {"#3498db":"สีน้ำเงิน", "#00cc00":"สีเขียว", "#ff0000":"สีแดง", "#FFFF00":"สีเหลือง", "#A8A8A8":"สีเทา","#FFFFFF":"สีขาว (ใส)","#FF99FF":"สีชมพู","#003300":"สีเขียวเข้ม"} 
+                }
             }
         };
 
         let scene, camera, renderer, controls, grid, selectedColor = "#111111";
-        
-        // อาเรย์สำหรับเก็บข้อมูลไฟล์ที่อยู่ในถาด
         let uploadedFiles = []; 
 
         function init() {
@@ -281,7 +291,6 @@
             controls.update();
         }
 
-        // ระบบรับไฟล์แบบหลายไฟล์พร้อมกัน
         document.getElementById('file-input').addEventListener('change', function(e) {
             const files = e.target.files;
             if (files.length === 0) return;
@@ -293,7 +302,6 @@
                     geometry.center();
                     geometry.computeBoundingBox();
 
-                    // สร้าง Mesh สำหรับชิ้นงานชิ้นนี้
                     const mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: selectedColor, flatShading: true }));
                     const wire = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.1, transparent: true }));
                     
@@ -301,16 +309,13 @@
                     singleModelGroup.add(mesh);
                     singleModelGroup.add(wire);
 
-                    // Snap Bottom to Bed
                     const box = geometry.boundingBox;
                     const size = new THREE.Vector3(); 
                     box.getSize(size);
                     singleModelGroup.position.y = size.y / 2;
 
-                    // คำนวณปริมาตรชิ้นงานเดี่ยวๆ
                     const vol = calculateVolume(geometry) / 1000;
 
-                    // บันทึกข้อมูลเข้า Array ถาดพิมพ์
                     const fileId = Date.now() + Math.random().toString(36).substr(2, 5);
                     uploadedFiles.push({
                         id: fileId,
@@ -321,28 +326,27 @@
                     });
 
                     scene.add(singleModelGroup);
-                    arrangeModels(); // จัดตำแหน่งไม่ให้ทับกัน
-                    renderTrayList(); // อัปเดต UI รายการขวา
+                    arrangeModels(); 
+                    renderTrayList(); 
                     updatePrice();
                 };
                 reader.readAsArrayBuffer(file);
             });
 
             if(window.innerWidth < 768) setTimeout(toggleMenu, 500);
-            this.value = ""; // รีเซ็ตอินพุตให้เลือกไฟล์ซ้ำได้
+            this.value = ""; 
         });
 
-        // ฟังก์ชันจัดเรียงโมเดลอัตโนมัติ (เรียงเป็นแถวตามแนวแกน X)
         function arrangeModels() {
-            let currentX = -((uploadedFiles.length - 1) * 60) / 2; // จัดให้อยู่กึ่งกลาง Grid ถาดพิมพ์
+            let currentX = -((uploadedFiles.length - 1) * 60) / 2; 
             uploadedFiles.forEach(file => {
                 file.group.position.x = currentX;
-                file.group.position.z = 0; // เรียงแนวนอนแนวเดียว
-                currentX += 80; // ระยะห่างก้าวถัดไป (สเปซชิ้นละ 8cm โดยประมาณ)
+                file.group.position.z = 0; 
+                currentX += 80; 
             });
         }
 
-        // ฟังก์ชัน Render รายการสิ่งของในถาดพิมพ์ออกมาที่ UI ซ้ายมือ
+        // แก้ไขปุ่มลบจากรูปกากบาทอิโมจิเป็นอักขระ &times; เพื่อความคมชัดบนพื้นหลังสีแดง
         function renderTrayList() {
             const container = document.getElementById('tray-list');
             if(uploadedFiles.length === 0) {
@@ -359,21 +363,20 @@
                         <div class="file-name">${index + 1}. ${file.name}</div>
                         <div class="file-meta">ขนาด: ${file.size} mm | ปริมาตร: ${file.volume.toFixed(1)} cm³</div>
                     </div>
-                    <button class="remove-btn" onclick="removeFile('${file.id}')">❌</button>
+                    <button class="remove-btn" onclick="removeFile('${file.id}')">&times;</button>
                 `;
                 container.appendChild(item);
             });
         }
 
-        // ระบบลบไฟล์ทีละชิ้นออกจากถาดพิมพ์
         function removeFile(id) {
             const index = uploadedFiles.findIndex(f => f.id === id);
             if(index > -1) {
-                scene.remove(uploadedFiles[index].group); // ลบวัตถุออกจากฉาก 3D
-                uploadedFiles.splice(index, 1); // เอาออกจากอาเรย์ข้อมูล
-                arrangeModels(); // จัดแถวชิ้นงานใหม่
-                renderTrayList(); // อัปเดตรายการหน้าเว็บ
-                updatePrice(); // คำนวณเงินใหม่
+                scene.remove(uploadedFiles[index].group); 
+                uploadedFiles.splice(index, 1); 
+                arrangeModels(); 
+                renderTrayList(); 
+                updatePrice(); 
             }
         }
 
@@ -408,7 +411,6 @@
             updatePrice();
         }
 
-        // คำนวณราคาทั้งถาด (บวกราคาต่อกรัมของทุกชิ้น + ค่า Setup 50 บาทแค่ครั้งเดียวต่อถาด)
         function updatePrice() {
             const mat = CONFIG.materials[document.getElementById('material').value];
             const infill = parseFloat(document.getElementById('infill').value);
@@ -416,15 +418,12 @@
             if(uploadedFiles.length > 0) {
                 let totalWeight = 0;
                 
-                // วนลูปหาผลรวมน้ำหนักของทุกชิ้นในถาดพิมพ์
                 uploadedFiles.forEach(file => {
                     const weight = (file.volume * mat.density * (0.2 + (infill * 0.8))) * 1.15;
                     totalWeight += weight;
                 });
 
-                // สูตรคำนวณราคา: (น้ำหนักรวมทั้งถาด * ราคาต่อกรัม) + ค่าพรีเซ็ตตั้งฐานพิมพ์ 50 บาท (คิดครั้งเดียว)
                 const total = (totalWeight * mat.price) + CONFIG.setupFee;
-                
                 document.getElementById('val-price').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
             } else {
                 document.getElementById('val-price').innerText = "0.00";
@@ -445,7 +444,6 @@
             const infillLabel = document.getElementById('infill').options[document.getElementById('infill').selectedIndex].text;
             const totalPrice = document.getElementById('val-price').innerText;
 
-            // สร้างลิสต์รายการไฟล์ทั้งหมดเพื่อส่งเข้าระบบเมล
             let fileListString = "";
             uploadedFiles.forEach((f, i) => {
                 fileListString += `   ${i+1}. ไฟล์: ${f.name} (ขนาด: ${f.size} mm)\n`;
